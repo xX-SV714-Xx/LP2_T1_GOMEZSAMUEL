@@ -17,13 +17,27 @@ import lombok.Setter;
 public class Tecnico {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name= "id_tecnico")
- private Integer idTecnico;
-	
-	@Column(name= "nombre")
- private String nombre;
-	
-	@Column(name= "especialidad")
-	 private String especialidad;
- 
+	@Column(name = "id_tecnico")
+	private Integer idTecnico;
+
+	@Column(name = "nombre")
+	private String nombre;
+
+	@Column(name = "especialidad")
+	private String especialidad;
+
+	public String getEspecialidadDescripcion() {
+		switch (especialidad) {
+		case "S":
+			return "Software";
+		case "H":
+			return "Hardware";
+		case "R":
+			return "Redes";
+		case "B":
+			return "Base de Datos";
+		default:
+			return "Sin Descripcion";
+		}
+	}
 }

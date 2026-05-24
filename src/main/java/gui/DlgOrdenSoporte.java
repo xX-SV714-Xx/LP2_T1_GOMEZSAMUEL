@@ -6,7 +6,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.List;
 
+import javax.persistence.EntityManager;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
@@ -16,6 +18,9 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
+import model.Cliente;
+import model.OrdenSoporte;
+import model.Tecnico;
 import util.JPAUtil;
 
 public class DlgOrdenSoporte extends JDialog implements ActionListener {
@@ -54,7 +59,6 @@ public class DlgOrdenSoporte extends JDialog implements ActionListener {
 	public final static int ELIMINAR = 3;
 	private JButton btnListar;
 	private JTextArea txtSalida;
-		
 
 	/**
 	 * Launch the application.
@@ -81,7 +85,7 @@ public class DlgOrdenSoporte extends JDialog implements ActionListener {
 		setTitle("Mantenimiento | Orden Soporte");
 		setBounds(100, 100, 810, 604);
 		getContentPane().setLayout(null);
-		
+
 		addWindowListener(new WindowAdapter() {
 			@Override
 			public void windowClosing(WindowEvent e) {
@@ -173,17 +177,17 @@ public class DlgOrdenSoporte extends JDialog implements ActionListener {
 		txtFechaRegistro.setBounds(175, 140, 146, 26);
 		getContentPane().add(txtFechaRegistro);
 		txtFechaRegistro.setColumns(10);
-		
+
 		txtMonto = new JTextField();
 		txtMonto.setEditable(false);
 		txtMonto.setColumns(10);
 		txtMonto.setBounds(175, 116, 86, 23);
 		getContentPane().add(txtMonto);
-		
+
 		lblCliente = new JLabel("Cliente :");
 		lblCliente.setBounds(10, 90, 149, 23);
 		getContentPane().add(lblCliente);
-		
+
 		cboClientes = new JComboBox<Object>();
 		cboClientes.setEnabled(false);
 		cboClientes.setBounds(174, 88, 251, 26);
@@ -240,6 +244,7 @@ public class DlgOrdenSoporte extends JDialog implements ActionListener {
 	}
 
 	protected void actionPerformedBtnListar(ActionEvent arg0) {
+
 		listar();
 	}
 
@@ -269,11 +274,34 @@ public class DlgOrdenSoporte extends JDialog implements ActionListener {
 	}
 
 	void listar() {
-		
+		EntityManager manager = JPAUtil.getEntityManager();
+		String jpql = "select o from OrdenSoporte o";
+
+		try {
+			List<OrdenSoporte> lstOrdenes = manager.createQuery(jpql, OrdenSoporte.class).getResultList();
+			
+			for (OrdenSoporte ordenSoporte : lstOrdenes) {
+				Tecnico tecnico = ordenSoporte.getTecnico();
+				Cliente cliente = ordenSoporte.getCliente();
+
+				
+				imprimir("Nro de orden......:" + ordenSoporte.getNroOrden());
+				imprimir("Fecha de Registro.:" + ordenSoporte.getFechaRegistro());
+				imprimir("Tecnico...........:" + tecnico.getNombre() + " Especialista en " + tecnico.getEspecialidadDescripcion());
+				imprimir("Cliente...........:" + cliente.getIdCliente() + "-" + cliente.getRazonSocial());
+				imprimir("Monto.............:" + ordenSoporte.getMonto());
+				imprimir("Detalle Incidencia:" + ordenSoporte.getDetalleIncidencia());
+				imprimir("------------------------------------------------\n");
+			}
+			
+		} finally {
+   
+			manager.close();
+		}
 	}
 
 	void adicionar() {
-		
+
 	}
 
 	void consultar() {
@@ -327,7 +355,7 @@ public class DlgOrdenSoporte extends JDialog implements ActionListener {
 	void mensajeInfo(String msj) {
 		mensaje(msj, "INFO", JOptionPane.INFORMATION_MESSAGE);
 	}
-	
+
 	void mensajeAdvertencia(String msj) {
 		mensaje(msj, "ADVERTENCIA", JOptionPane.WARNING_MESSAGE);
 	}

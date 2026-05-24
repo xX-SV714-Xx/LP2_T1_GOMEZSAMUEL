@@ -6,6 +6,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.time.LocalDate;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.persistence.EntityManager;
@@ -195,7 +197,8 @@ public class DlgOrdenSoporte extends JDialog implements ActionListener {
 
 		habilitarEntradas(false);
 		habilitarBotones(true);
-		cargarComboBoxActividad();
+		cargarTecnico();
+		cargarCliente();
 	}
 
 	public void actionPerformed(ActionEvent arg0) {
@@ -269,7 +272,34 @@ public class DlgOrdenSoporte extends JDialog implements ActionListener {
 		txtNroOrdenSoporte.requestFocus();
 	}
 
-	void cargarComboBoxActividad() {
+	void cargarCliente() {
+		EntityManager manager = JPAUtil.getEntityManager();
+		String jpql = "Select c from Cliente c";
+
+		try {
+           List<Cliente> lstClientes = manager.createQuery(jpql, Cliente.class).getResultList();
+           
+          for (Cliente cliente : lstClientes) {
+			cboClientes.addItem(cliente);
+		}
+		} finally {
+			manager.close();
+		}
+	}
+	
+	void cargarTecnico() {
+		EntityManager manager = JPAUtil.getEntityManager();
+		String jpql = "Select t from Tecnico t";
+
+		try {
+           List<Tecnico> lstTecnicos = manager.createQuery(jpql, Tecnico.class).getResultList();
+           
+          for (Tecnico tecnico : lstTecnicos) {
+			cboTecnicos.addItem(tecnico);
+		}
+		} finally {
+			manager.close();
+		}
 
 	}
 
@@ -279,37 +309,100 @@ public class DlgOrdenSoporte extends JDialog implements ActionListener {
 
 		try {
 			List<OrdenSoporte> lstOrdenes = manager.createQuery(jpql, OrdenSoporte.class).getResultList();
-			
+
 			for (OrdenSoporte ordenSoporte : lstOrdenes) {
 				Tecnico tecnico = ordenSoporte.getTecnico();
 				Cliente cliente = ordenSoporte.getCliente();
 
-				
 				imprimir("Nro de orden......:" + ordenSoporte.getNroOrden());
 				imprimir("Fecha de Registro.:" + ordenSoporte.getFechaRegistro());
-				imprimir("Tecnico...........:" + tecnico.getNombre() + " Especialista en " + tecnico.getEspecialidadDescripcion());
+				imprimir("Tecnico...........:" + tecnico.getNombre() + " Especialista en "
+						+ tecnico.getEspecialidadDescripcion());
 				imprimir("Cliente...........:" + cliente.getIdCliente() + "-" + cliente.getRazonSocial());
 				imprimir("Monto.............:" + ordenSoporte.getMonto());
 				imprimir("Detalle Incidencia:" + ordenSoporte.getDetalleIncidencia());
 				imprimir("------------------------------------------------\n");
 			}
-			
+
 		} finally {
-   
+
 			manager.close();
 		}
 	}
 
 	void adicionar() {
-
+		String detalleIncidencia = txtDetalleIncidencia.getText();
+		Tecnico tecnico = (Tecnico) cboTecnicos.getSelectedItem();
+		Cliente cliente = (Cliente) cboClientes.getSelectedItem();
+		Double monto = Double.parseDouble(txtMonto.getText());
+		
+		EntityManager manager = JPAUtil.getEntityManager();
+		
+		try {
+			OrdenSoporte ordenSoporte = new OrdenSoporte(null, null, tecnico, cliente, monto, detalleIncidencia);
+			
+			manager.getTransaction().begin();
+			manager.persist(ordenSoporte);
+			manager.getTransaction().commit();
+			
+			mensajeInfo("Orden de soporte registrada");
+			limpiar();
+			
+		} catch (Exception e) {
+			mensajeError("Hubo un error en la transacción");
+			e.printStackTrace();
+		} finally {
+			manager.close();
+		}
 	}
 
 	void consultar() {
-
+     Integer nroOrden = Integer.parseInt(txtNroOrdenSoporte.getText());
+     EntityManager manager = JPAUtil.getEntityManager();
+     
+     try {
+		OrdenSoporte OrdenSoporte = manager.find(OrdenSoporte.class, nroOrden);
+		
+		if(OrdenSoporte == null) {
+			mensajeAdvertencia("Orden de soporte no encontrada");
+			return;
+		}
+		txtDetalleIncidencia.setText(OrdenSoporte.getDetalleIncidencia());
+		cboTecnicos.setSelectedItem(OrdenSoporte.getTecnico());
+		cboClientes.setSelectedItem(OrdenSoporte.getCliente());
+		txtMonto.setText(OrdenSoporte.getMonto()+ "");
+		txtFechaRegistro.setText(OrdenSoporte.getFechaRegistro()+ "");
+		
+	} finally {
+     manager.close();	
+     }
 	}
 
 	void modificar() {
-
+		Integer nroOrden = Integer.parseInt(txtNroOrdenSoporte.getText());
+		String detalleIncidencia = txtDetalleIncidencia.getText();
+		Tecnico tecnico = (Tecnico) cboTecnicos.getSelectedItem();
+		Cliente cliente = (Cliente) cboClientes.getSelectedItem();
+		Double monto = Double.parseDouble(txtMonto.getText());
+		//LocalDate fechaRegistro = LocalDate.parse(detalleIncidencia);
+		EntityManager manager = JPAUtil.getEntityManager();
+		
+		try {
+			OrdenSoporte ordenSoporte = new OrdenSoporte( nroOrden, null, tecnico, cliente, monto, detalleIncidencia);
+			
+			manager.getTransaction().begin();
+			manager.persist(ordenSoporte);
+			manager.getTransaction().commit();
+			
+			mensajeInfo("Orden de soporte actualizada");
+			limpiar();
+			
+		} catch (Exception e) {
+			mensajeError("Hubo un error en la transacción");
+			e.printStackTrace();
+		} finally {
+			manager.close();
+		}
 	}
 
 	void eliminar() {
